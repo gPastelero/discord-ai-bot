@@ -18,10 +18,7 @@ class Bot(commands.Bot):
         super().__init__(command_prefix="!", intents=intents)
 
     async def setup_hook(self) -> None:
-        # Load the AI commands cog.
         await self.load_extension("cogs.ai_commands")
-
-        # Sync slash commands with Discord.
         await self.tree.sync()
         logger.info("Slash commands synced.")
 

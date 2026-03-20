@@ -1,4 +1,5 @@
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 
 LOG_PATH = "logs/bot.log"
@@ -12,6 +13,8 @@ def setup_logger(name: str = "bot") -> logging.Logger:
     # adding duplicate handlers if this function is called more than once.
     if logger.handlers:
         return logger
+
+    log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO)
 
     # Root level is DEBUG so handlers can each filter to their own level.
     logger.setLevel(logging.DEBUG)
@@ -28,9 +31,9 @@ def setup_logger(name: str = "bot") -> logging.Logger:
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
 
-    # Console handler — only INFO+ to keep terminal output readable.
+    # Console handler — level controlled by LOG_LEVEL env var.
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(log_level)
     console_handler.setFormatter(formatter)
 
     logger.addHandler(file_handler)

@@ -15,7 +15,8 @@ async def get_context(channel: discord.TextChannel) -> list[dict]:
             continue
 
         role = "assistant" if message.author.bot else "user"
-        messages.append({"role": role, "content": message.content})
+        content = message.content if message.author.bot else f"{message.author.display_name}: {message.content}"
+        messages.append({"role": role, "content": content})
 
     messages.reverse()
     return messages

@@ -12,5 +12,6 @@ def _require(key: str) -> str:
 DISCORD_TOKEN: str = _require("DISCORD_TOKEN")
 OPENROUTER_API_KEY: str = _require("OPENROUTER_API_KEY")
 
-MODEL: str = os.getenv("MODEL", "deepseek/deepseek-v3.2")
-CONTEXT_LIMIT: int = int(os.getenv("CONTEXT_LIMIT", "40"))
+MODEL: str = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-v3.2")
+CONTEXT_LIMIT: int = int(os.getenv("CONTEXT_WINDOW_SIZE", "60"))
+LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")

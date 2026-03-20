@@ -10,7 +10,6 @@ from services.logger import setup_logger
 logger = setup_logger(__name__)
 
 # Global lock — only one AI response is generated at a time.
-# Requests that arrive while the lock is held are rejected with an ephemeral message.
 _lock = asyncio.Lock()
 
 
@@ -18,33 +17,43 @@ class AICommands(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @app_commands.command(name="ai", description="Send a message to the AI.")
-    @app_commands.describe(message="The message to send.")
-    async def ai(self, interaction: discord.Interaction, message: str) -> None:
-        # Try to acquire the lock without blocking. If it's already held,
-        # tell the user the bot is busy and bail out.
+    @commands.command(name="ai")
+    async def ai(self, ctx: commands.Context, *, message: str) -> None:
         if _lock.locked():
-            await interaction.response.send_message(
-                "The bot is currently generating a response. Please try again in a moment.",
-                ephemeral=True,
-            )
+            await ctx.send("The bot is currently generating a response. Please try again in a moment.")
             return
 
         async with _lock:
-            # Defer the response immediately — API calls can take several seconds
-            # and Discord requires an acknowledgement within 3 seconds.
-            await interaction.response.defer()
+            async with ctx.typing():
+                try:
+                    context = await get_context(ctx.channel)
+                    reply = await get_ai_response(context, message, ctx.author.display_name)
+                    await ctx.send(reply)
+                    logger.info(f"Responded to '{message[:50]}' in #{ctx.channel.name}")
+                except Exception:
+                    logger.exception("Error generating AI response")
+                    await ctx.send("Something went wrong while generating a response. Please try again.")
 
-            try:
-                context = await get_context(interaction.channel)
-                reply = await get_ai_response(context, message)
-                await interaction.followup.send(reply)
-                logger.info(f"Responded to '{message[:50]}' in #{interaction.channel.name}")
-            except Exception:
-                logger.exception("Error generating AI response")
-                await interaction.followup.send(
-                    "Something went wrong while generating a response. Please try again.",
-                )
+    @app_commands.command(name="purge", description="Delete the last X messages in this channel.")
+    @app_commands.describe(amount="Number of messages to delete.")
+    @app_commands.default_permissions(manage_messages=True)
+    async def purge(self, interaction: discord.Interaction, amount: int) -> None:
+        if amount < 1:
+            await interaction.response.send_message("Amount must be at least 1.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        deleted = await interaction.channel.purge(limit=amount)
+        await interaction.followup.send(f"Deleted {len(deleted)} messages.", ephemeral=True)
+        logger.info(f"{interaction.user} purged {len(deleted)} messages in #{interaction.channel.name}")
+
+
+    @commands.command(name="sync")
+    @commands.is_owner()
+    async def sync(self, ctx: commands.Context) -> None:
+        ctx.bot.tree.copy_global_to(guild=ctx.guild)
+        synced = await ctx.bot.tree.sync(guild=ctx.guild)
+        await ctx.send(f"Synced {len(synced)} commands to this server.")
 
 
 async def setup(bot: commands.Bot) -> None:
