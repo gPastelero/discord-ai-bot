@@ -25,14 +25,19 @@ class AICommands(commands.Cog):
 
         async with _lock:
             async with ctx.typing():
-                try:
-                    context = await get_context(ctx.channel)
-                    reply = await get_ai_response(context, message, ctx.author.display_name)
-                    await ctx.send(reply)
-                    logger.info(f"Responded to '{message[:50]}' in #{ctx.channel.name}")
-                except Exception:
-                    logger.exception("Error generating AI response")
-                    await ctx.send("Something went wrong while generating a response. Please try again.")
+                context = await get_context(ctx.channel)
+                for attempt in range(1, 4):
+                    try:
+                        reply = await get_ai_response(context, message, ctx.author.display_name)
+                        await ctx.send(reply)
+                        logger.info(f"Responded to '{message[:50]}' in #{ctx.channel.name}")
+                        break
+                    except Exception:
+                        logger.exception(f"Error generating AI response (attempt {attempt}/3)")
+                        if attempt < 3:
+                            await asyncio.sleep(0.5)
+                        else:
+                            await ctx.send("Something went wrong while generating a response. Please try again.")
 
     @app_commands.command(name="purge", description="Delete the last X messages in this channel.")
     @app_commands.describe(amount="Number of messages to delete.")
