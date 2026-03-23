@@ -60,3 +60,4 @@ python bot.py
 | `!ai <message>` | Send a message to the AI character. The bot reads recent channel history for context before replying. |
 | `/purge <amount>` | Delete the last N messages in the channel. Requires **Manage Messages** permission. |
 | `!sync` | Sync slash commands to the current server. Owner only. |
+<img width="644" height="477" alt="Screenshot 2026-03-23 170123" src="https://github.com/user-attachments/assets/4b18c93f-82d1-48fc-aaad-823d11f61a76" />
